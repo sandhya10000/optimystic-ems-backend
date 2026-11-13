@@ -9,12 +9,14 @@ const {
 } = require("../controllers/attendanceController");
 
 // Apne existing authentication middleware ka path/name use karein
-const { protect } = require("../middleware/authMiddleware");
+const { protect, authorizeRoles } = require("../middleware/authMiddleware");
 
 router.post("/check-in", protect, checkIn);
 router.post("/check-out", protect, checkOut);
 
 router.get("/today", protect, getTodayAttendance);
 router.get("/my", protect, getMyAttendance);
+
+//
 
 module.exports = router;

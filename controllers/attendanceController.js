@@ -26,6 +26,7 @@ const isOfficeIp = (ip) => {
 };
 
 // CHECK IN
+
 exports.checkIn = async (req, res) => {
   try {
     const employeeId = req.user?._id || req.user?.id;
@@ -39,13 +40,8 @@ exports.checkIn = async (req, res) => {
 
     const clientIp = getClientIp(req);
 
-    if (!isOfficeIp(clientIp)) {
-      return res.status(403).json({
-        success: false,
-        message: "Check In is allowed only from office network.",
-        yourIp: clientIp,
-      });
-    }
+    // Office IP = WFO, Other IP = WFH
+    const attendanceType = isOfficeIp(clientIp) ? "WFO" : "WFH";
 
     const today = getTodayDate();
 
@@ -70,7 +66,7 @@ exports.checkIn = async (req, res) => {
         $set: {
           checkIn: new Date(),
           checkInIp: clientIp,
-          attendanceType: "WFO",
+          attendanceType,
           status: "Present",
         },
       },
@@ -83,7 +79,7 @@ exports.checkIn = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Check In successful",
+      message: `Check In successful (${attendanceType})`,
       attendance,
     });
   } catch (error) {

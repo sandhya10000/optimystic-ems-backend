@@ -450,10 +450,45 @@ const updateEmployee = async (req, res) => {
     });
   }
 };
+// GET ALL ATTENDANCE - ADMIN
+
+const getAllAttendance = async (req, res) => {
+  try {
+    const { date, employee, status, attendanceType } = req.query;
+
+    const filter = {};
+
+    if (date) filter.date = date;
+    if (employee) filter.employee = employee;
+    if (status) filter.status = status;
+    if (attendanceType) filter.attendanceType = attendanceType;
+
+    const attendance = await Attendance.find(filter)
+      .populate("employee")
+      .sort({ date: -1, checkIn: -1 });
+
+    console.log("Attendance Records:", attendance);
+
+    return res.status(200).json({
+      success: true,
+      count: attendance.length,
+      attendance,
+    });
+  } catch (error) {
+    console.error("Get All Attendance Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch attendance records",
+      error: error.message,
+    });
+  }
+};
 
 module.exports = {
   getAdminDashboard,
   getAllEmployees,
   getEmployeeById,
   updateEmployee,
+  getAllAttendance,
 };

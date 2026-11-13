@@ -13,11 +13,21 @@ const {
 const { protect, authorizeRoles } = require("../middleware/authMiddleware");
 
 // Admin-only routes
-router.post("/", protect, authorizeRoles("admin"), createAsset);
-router.get("/", protect, authorizeRoles("admin"), getAllAssets);
-router.put("/:id", protect, authorizeRoles("admin"), updateAsset);
-router.patch("/:id/assign", protect, authorizeRoles("admin"), assignAsset);
-router.patch("/:id/return", protect, authorizeRoles("admin"), returnAsset);
-router.delete("/:id", protect, authorizeRoles("admin"), deleteAsset);
+router.post("/", protect, authorizeRoles("super_admin"), createAsset);
+router.get("/", protect, authorizeRoles("super_admin"), getAllAssets);
+router.put("/:id", protect, authorizeRoles("super_admin"), updateAsset);
+router.patch(
+  "/:id/assign",
+  protect,
+  authorizeRoles("super_admin"),
+  assignAsset,
+);
+router.patch(
+  "/:id/return",
+  protect,
+  authorizeRoles("super_admin"),
+  returnAsset,
+);
+router.delete("/:id", protect, authorizeRoles("super_admin"), deleteAsset);
 
 module.exports = router;
