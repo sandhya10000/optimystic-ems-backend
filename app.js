@@ -35,6 +35,7 @@ const assetRoutes = require("./routes/assetRoutes");
 
 const adminDashboardRoutes = require("./routes/adminDashboardRoutes");
 const salarySlipRoutes = require("./routes/salarySlipRoutes");
+const kycRoutes = require("./routes/kycRoutes");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/employee", employeeRoutes);
@@ -43,6 +44,7 @@ app.use("/api/assets", assetRoutes);
 
 app.use("/api/admin", adminDashboardRoutes);
 app.use("/api/salary-slips", salarySlipRoutes);
+app.use("/api/kyc", kycRoutes);
 
 // 404 handler
 app.use((req, res) => {

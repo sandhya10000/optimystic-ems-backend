@@ -7,6 +7,8 @@ const {
   register,
   login,
   updateEmployeeApproval,
+  forgotPassword,
+  resetPassword,
 } = require("../controllers/authController");
 
 const { protect, authorizeRoles } = require("../middleware/authMiddleware");
@@ -32,6 +34,11 @@ router.post("/register", register);
 
 router.post("/login", loginLimiter, login);
 
+// Forgot Password
+router.post("/forgot-password", forgotPassword);
+
+// Reset Password
+router.post("/reset-password/:token", resetPassword);
 // HR/Admin employee approval
 
 router.patch(

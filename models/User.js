@@ -96,6 +96,19 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
+    // Forgot Password Fields
+    resetPasswordToken: {
+      type: String,
+      default: null,
+      select: false,
+    },
+
+    resetPasswordExpire: {
+      type: Date,
+      default: null,
+      select: false,
+    },
+
     role: {
       type: String,
       enum: [

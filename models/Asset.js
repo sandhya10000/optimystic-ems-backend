@@ -2,84 +2,47 @@ const mongoose = require("mongoose");
 
 const assetSchema = new mongoose.Schema(
   {
-    assetCode: {
+    assetType: {
       type: String,
-      unique: true,
-      trim: true,
+      enum: ["Laptop", "Mobile", "SIM Card"],
+      required: true,
     },
-
-    name: {
+    assetName: {
       type: String,
       required: true,
       trim: true,
     },
-
-    category: {
-      type: String,
-      required: true,
-      enum: [
-        "Laptop",
-        "Desktop",
-        "Mobile",
-        "Monitor",
-        "Keyboard",
-        "Mouse",
-        "ID Card",
-        "SIM Card",
-        "Vehicle",
-        "Other",
-      ],
-    },
-
     brand: {
       type: String,
+      trim: true,
       default: "",
     },
-
     model: {
       type: String,
+      trim: true,
       default: "",
     },
-
-    serialNumber: {
+    identifier: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
+      unique: true,
     },
-
-    employee: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-    },
-
-    issueDate: {
-      type: Date,
-      default: null,
-    },
-
+    purchaseDate: Date,
+    warrantyExpiry: Date,
     condition: {
       type: String,
       enum: ["New", "Good", "Fair", "Damaged"],
       default: "New",
     },
-
     status: {
       type: String,
       enum: ["Available", "Assigned", "Under Repair", "Retired"],
       default: "Available",
     },
-
-    description: {
+    remarks: {
       type: String,
       default: "",
-    },
-
-    assignedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
     },
   },
   { timestamps: true },
