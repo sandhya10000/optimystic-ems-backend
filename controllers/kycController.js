@@ -724,8 +724,105 @@ const generateDigilockerLink = async (req, res) => {
   }
 };
 
+const getAllPANVerifications = async (req, res) => {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+
+    if (req.query.verificationStatus) {
+      filter.verificationStatus = req.query.verificationStatus;
+    }
+
+    const [data, total] = await Promise.all([
+      PanVerification.find(filter)
+        .select("-providerResponse")
+        .populate("userId", "firstName lastName email role")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+
+      PanVerification.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "All PAN verifications fetched successfully",
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+      data,
+    });
+  } catch (error) {
+    console.error("Admin PAN History Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch PAN verification records",
+    });
+  }
+};
+
+// ============================================
+// ADMIN - GET ALL EMPLOYEES DIGILOCKER HISTORY
+// GET /api/admin/kyc/digilocker
+// ============================================
+
+const getAllDigilockerVerifications = async (req, res) => {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+
+    if (req.query.verificationStatus) {
+      filter.verificationStatus = req.query.verificationStatus;
+    }
+
+    const [data, total] = await Promise.all([
+      DigilockerVerification.find(filter)
+        .populate("userId", "firstName lastName email role")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+
+      DigilockerVerification.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "All DigiLocker verifications fetched successfully",
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+      data,
+    });
+  } catch (error) {
+    console.error("Admin DigiLocker History Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch DigiLocker verification records",
+    });
+  }
+};
+
 module.exports = {
   verifyPAN,
   getPANHistory,
   generateDigilockerLink,
+  // Admin APIs
+  getAllPANVerifications,
+  getAllDigilockerVerifications,
 };
