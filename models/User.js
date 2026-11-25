@@ -1,17 +1,18 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
   {
     firstName: {
       type: String,
       trim: true,
-      required: true,
+      default: "",
     },
 
     lastName: {
       type: String,
       trim: true,
-      required: true,
+      default: "",
     },
 
     email: {
@@ -22,91 +23,76 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
-    phone: {
+    // Password will be created when Admin creates employee login
+    password: {
       type: String,
-      required: true,
+      required: false,
+      select: false,
+    },
+
+    // Existing Employee collection reference
+    employeeRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Employee",
       unique: true,
-      trim: true,
+      sparse: true,
     },
 
     employeeId: {
       type: String,
-      required: true,
-      unique: true,
-      uppercase: true,
       trim: true,
+      unique: true,
+      sparse: true,
     },
 
-    dateOfBirth: {
-      type: Date,
-      required: true,
+    phone: {
+      type: String,
+      default: "",
     },
 
     gender: {
       type: String,
-      enum: ["male", "female", "other", "prefer_not_to_say"],
-      required: true,
+      default: "",
+    },
+
+    dateOfBirth: {
+      type: Date,
+      default: null,
     },
 
     maritalStatus: {
       type: String,
-      enum: ["single", "married", "other"],
-      default: "single",
+      default: "",
     },
 
     address: {
       type: String,
-      required: true,
-      trim: true,
+      default: "",
     },
 
     city: {
       type: String,
-      required: true,
-      trim: true,
+      default: "",
     },
 
     state: {
       type: String,
-      required: true,
-      trim: true,
+      default: "",
     },
 
     pincode: {
       type: String,
-      required: true,
-      trim: true,
+      default: "",
     },
 
     emergencyContactName: {
       type: String,
-      trim: true,
       default: "",
     },
 
     emergencyContactNumber: {
       type: String,
-      trim: true,
       default: "",
-    },
-
-    password: {
-      type: String,
-      required: true,
-      select: false,
-    },
-
-    // Forgot Password Fields
-    resetPasswordToken: {
-      type: String,
-      default: null,
-      select: false,
-    },
-
-    resetPasswordExpire: {
-      type: Date,
-      default: null,
-      select: false,
     },
 
     role: {
@@ -121,26 +107,31 @@ const userSchema = new mongoose.Schema(
       default: "employee",
     },
 
+    profileCompleted: {
+      type: Boolean,
+      default: false,
+    },
+
     accountStatus: {
       type: String,
       enum: ["pending", "approved", "rejected"],
-      default: "pending",
-    },
-
-    approvedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-    },
-
-    approvedAt: {
-      type: Date,
-      default: null,
+      default: "approved",
     },
   },
-  {
-    timestamps: true,
-  },
+  { timestamps: true },
 );
+
+// Password hashing
+userSchema.pre("save", async function () {
+  // Password modified nahi hua toh return
+  if (!this.isModified("password")) {
+    return;
+  }
+
+  // Hash password
+  const salt = await bcrypt.genSalt(10);
+
+  this.password = await bcrypt.hash(this.password, salt);
+});
 
 module.exports = mongoose.model("User", userSchema);

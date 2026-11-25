@@ -44,7 +44,6 @@ exports.register = async (req, res) => {
       lastName,
       email,
       phone,
-      employeeId,
       dateOfBirth,
       gender,
       maritalStatus,
@@ -54,24 +53,20 @@ exports.register = async (req, res) => {
       pincode,
       emergencyContactName,
       emergencyContactNumber,
-      password,
     } = req.body;
 
     // Required fields
-
     const requiredFields = {
       firstName,
       lastName,
       email,
       phone,
-      employeeId,
       dateOfBirth,
       gender,
       address,
       city,
       state,
       pincode,
-      password,
     };
 
     const missingFields = Object.entries(requiredFields)
@@ -85,11 +80,13 @@ exports.register = async (req, res) => {
       });
     }
 
+    // Normalize values
     const normalizedEmail = email.trim().toLowerCase();
-    const normalizedEmployeeId = employeeId.trim().toUpperCase();
+    const normalizedPhone = phone.trim();
+    const normalizedPincode = pincode.trim();
+    const normalizedEmergencyPhone = emergencyContactNumber?.trim() || "";
 
     // Validate email
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailRegex.test(normalizedEmail)) {
@@ -100,35 +97,25 @@ exports.register = async (req, res) => {
     }
 
     // Validate phone
-
-    if (!/^[6-9]\d{9}$/.test(phone)) {
+    if (!/^[6-9]\d{9}$/.test(normalizedPhone)) {
       return res.status(400).json({
         success: false,
         message: "Invalid mobile number.",
       });
     }
 
-    // Validate password
-
-    if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must contain at least 8 characters.",
-      });
-    }
-
     // Validate PIN code
-
-    if (!/^\d{6}$/.test(pincode)) {
+    if (!/^\d{6}$/.test(normalizedPincode)) {
       return res.status(400).json({
         success: false,
         message: "Invalid PIN code.",
       });
     }
 
+    // Validate emergency contact
     if (
-      emergencyContactNumber &&
-      !/^[6-9]\d{9}$/.test(emergencyContactNumber)
+      normalizedEmergencyPhone &&
+      !/^[6-9]\d{9}$/.test(normalizedEmergencyPhone)
     ) {
       return res.status(400).json({
         success: false,
@@ -136,6 +123,7 @@ exports.register = async (req, res) => {
       });
     }
 
+    // Validate DOB
     const dob = new Date(dateOfBirth);
 
     if (
@@ -150,13 +138,8 @@ exports.register = async (req, res) => {
     }
 
     // Check duplicate records
-
     const existingUser = await User.findOne({
-      $or: [
-        { email: normalizedEmail },
-        { phone },
-        { employeeId: normalizedEmployeeId },
-      ],
+      $or: [{ email: normalizedEmail }, { phone: normalizedPhone }],
     });
 
     if (existingUser) {
@@ -164,10 +147,8 @@ exports.register = async (req, res) => {
 
       if (existingUser.email === normalizedEmail) {
         message = "Email address is already registered.";
-      } else if (existingUser.phone === phone) {
+      } else if (existingUser.phone === normalizedPhone) {
         message = "Mobile number is already registered.";
-      } else if (existingUser.employeeId === normalizedEmployeeId) {
-        message = "Employee ID is already registered.";
       }
 
       return res.status(409).json({
@@ -176,30 +157,23 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Hash password
-
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Create employee
-
+    // Create employee registration
     const user = await User.create({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: normalizedEmail,
-      phone,
-      employeeId: normalizedEmployeeId,
+      phone: normalizedPhone,
       dateOfBirth: dob,
       gender,
       maritalStatus: maritalStatus || "single",
       address: address.trim(),
       city: city.trim(),
       state: state.trim(),
-      pincode,
-      emergencyContactName,
-      emergencyContactNumber,
-      password: hashedPassword,
+      pincode: normalizedPincode,
+      emergencyContactName: emergencyContactName?.trim() || "",
+      emergencyContactNumber: normalizedEmergencyPhone,
 
-      // Never accept role or approval status from frontend.
+      // Role and status controlled by backend
       role: "employee",
       accountStatus: "pending",
     });
@@ -216,7 +190,7 @@ exports.register = async (req, res) => {
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
-        message: "Email, mobile number or employee ID already exists.",
+        message: "Email or mobile number is already registered.",
       });
     }
 
@@ -246,7 +220,6 @@ exports.login = async (req, res) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     // Find user
-
     const user = await User.findOne({
       email: normalizedEmail,
     }).select("+password");
@@ -259,7 +232,6 @@ exports.login = async (req, res) => {
     }
 
     // Verify password
-
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
@@ -269,31 +241,36 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check approval
+    // Check account status
+    if (user.accountStatus === "pending") {
+      return res.status(403).json({
+        success: false,
+        message: "Your account is pending HR approval.",
+      });
+    }
 
-    // if (user.accountStatus === "pending") {
-    //   return res.status(403).json({
-    //     success: false,
-    //     message: "Your account is pending HR approval.",
-    //   });
-    // }
-
-    // if (user.accountStatus === "rejected") {
-    //   return res.status(403).json({
-    //     success: false,
-    //     message: "Your registration has been rejected. Please contact HR.",
-    //   });
-    // }
+    if (user.accountStatus === "rejected" || user.accountStatus === "blocked") {
+      return res.status(403).json({
+        success: false,
+        message: "Your account is not active. Please contact HR.",
+      });
+    }
 
     // Generate JWT
-
     const token = generateToken(user);
+
+    // Safe user response
+    const safeUser = getSafeUser(user);
 
     return res.status(200).json({
       success: true,
       message: "Login successful.",
       token,
-      user: getSafeUser(user),
+
+      user: {
+        ...safeUser,
+        profileCompleted: user.profileCompleted || false,
+      },
     });
   } catch (error) {
     console.error("Login Error:", error);
